@@ -10,6 +10,7 @@ model = YOLO("yolov8n.pt")
 # from PIL
 im1 = Image.open("img/10.jpg")
 results = model.predict(source=im1, save=True)  # save plotted images
+print(results[0].boxes)
 
 # from ndarray
 # im2 = cv2.imread("img/01.jpg")

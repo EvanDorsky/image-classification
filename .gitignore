@@ -1,4 +1,6 @@
 .DS_Store
 img
 classification
-recognition
+detection
+disabled
+img_detected

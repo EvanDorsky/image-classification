@@ -110,11 +110,11 @@ def main():
         detect(model, os.path.join(os.getcwd(), "img", f))
 
     # classify
-    # for mname in classifiers:
-    #   model = classifiers[mname]
-    #   fsplit = os.path.splitext(f)
-    #   if "jpg" in fsplit[1]:
-    #     classify(model, os.path.join(os.getcwd(), "img", f))
+    for mname in classifiers:
+      model = classifiers[mname]
+      fsplit = os.path.splitext(f)
+      if "jpg" in fsplit[1]:
+        classify(model, os.path.join(os.getcwd(), "img", f))
 
 if __name__ == '__main__':
   main()

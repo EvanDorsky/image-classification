@@ -1,6 +1,6 @@
 .DS_Store
-img
 classification
 detection
 disabled
-img_detected
+img*/
+*.pt

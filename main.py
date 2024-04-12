@@ -13,17 +13,19 @@ from pprint import pprint
 from subprocess import call, check_output
 import subprocess
 
-def classify(model, impath, result_count=10):
-  print("====================")
-  print(model["name"])
-  print(model["desc"])
-  start = time.time()
+def classify(model, impath, result_count=10, debug=False):
+  if debug:
+    print("====================")
+    print(model["name"])
+    print(model["desc"])
+    start = time.time()
 
   predictions, probabilities = model["model"].classifyImage(impath, result_count)
-  elapsed = time.time() - start
-  print("elapsed time: %f msec" % (elapsed*1000))
-  for eachPrediction, eachProbability in zip(predictions, probabilities):
-    print(eachPrediction , " : " , eachProbability)
+  if debug:
+    elapsed = time.time() - start
+    print("elapsed time: %f msec" % (elapsed*1000))
+    for eachPrediction, eachProbability in zip(predictions, probabilities):
+      print(eachPrediction , " : " , eachProbability)
 
 def det_counts(detections):
   det_counts = {}
@@ -35,31 +37,31 @@ def det_counts(detections):
 
   return det_counts
 
-def detect(model, impath, result_count=10):
-  print("====================")
-  print(model["name"])
-  print(model["desc"])
+def get_exifstamp(path):
+  res = check_output(["exiftool", "-DateTimeOriginal", path], text=True)
+  datetime_str = res.split(': ')[1].strip()
+  dt_obj = datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
+  return int(dt_obj.timestamp())
+
+def detect(model, impath, result_count=10, debug=False):
+  if debug:
+    print("====================")
+    print(model["name"])
+    print(model["desc"])
   start = time.time()
 
-  # detections = model["model"].detectObjectsFromImage(input_image=impath, output_image_path=impath+"_"+model["name"]+".jpg", minimum_percentage_probability=20)
-  detections = model["model"].detectObjectsFromImage(input_image=impath, minimum_percentage_probability=20)
+  outpath = None
+  if debug:
+    outpath = impath+"_"+model["name"]+".jpg"
+  detections = model["model"].detectObjectsFromImage(input_image=impath, output_image_path=outpath, minimum_percentage_probability=20)
 
-  for det in detections:
-    print(det["name"] , " : ", det["percentage_probability"], " : ", det["box_points"] )
-    print("--------------------------------")
+  if debug:
+    for det in detections:
+      print(det["name"] , " : ", det["percentage_probability"], " : ", det["box_points"] )
+      print("--------------------------------")
 
   dets = det_counts(detections)
   check_output(["exiftool", "-UserComment="+json.dumps(dets), impath, '-overwrite_original'])
-
-  res = check_output(["exiftool", "-DateTimeOriginal", impath], text=True)
-  # Parse the output to extract the datetime string
-  datetime_str = res.split(': ')[1].strip()
-
-  # Convert the string to a datetime object
-  dt_obj = datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
-
-  # Print the datetime as a timestamp
-  print(int(dt_obj.timestamp()))
 
 def init_classifiers():
   classifiers = {}
@@ -124,13 +126,16 @@ def init_detectors():
   return detectors
 
 def main():
+  debug = False
+
   classifiers = init_classifiers()
   detectors = init_detectors()
 
   for f in os.listdir("img"):
-    print("--------------------")
-    print("Image: %s" % f)
-    print("--------------------")
+    if debug:
+      print("--------------------")
+      print("Image: %s" % f)
+      print("--------------------")
 
     # detect
     for mname in detectors:

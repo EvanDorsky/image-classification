@@ -8,7 +8,7 @@ import os
 from pprint import pprint
 import time
 
-def predict(model, impath, result_count=10):
+def classify(model, impath, result_count=10):
   print("====================")
   print(model["name"])
   print(model["desc"])
@@ -19,44 +19,50 @@ def predict(model, impath, result_count=10):
   for eachPrediction, eachProbability in zip(predictions, probabilities):
     print(eachPrediction , " : " , eachProbability)
 
-def main():
-  models = {}
-  for f in os.listdir("models"):
+def init_classifiers():
+  classifiers = {}
+
+  for f in os.listdir("classification"):
     fname_split = f.split('-')
-    models[fname_split[0]] = {
-      "path": os.path.join(os.getcwd(), "models", f),
+    classifiers[fname_split[0]] = {
+      "path": os.path.join(os.getcwd(), "classification", f),
       "name": fname_split[0]
     }
 
-  for mname in models:
+  for mname in classifiers:
     m = ImageClassification()
     if "mobilenet" in mname:
       m.setModelTypeAsMobileNetV2()
-      models[mname]["desc"] = "fastest prediction time and moderate accuracy"
+      classifiers[mname]["desc"] = "fastest prediction time and moderate accuracy"
     elif "resnet" in mname:
       m.setModelTypeAsResNet50()
-      models[mname]["desc"] = "fast prediction time and high accuracy"
+      classifiers[mname]["desc"] = "fast prediction time and high accuracy"
     elif "inception" in mname:
       m.setModelTypeAsInceptionV3()
-      models[mname]["desc"] = "slow prediction time and higher accuracy"
+      classifiers[mname]["desc"] = "slow prediction time and higher accuracy"
     elif "densenet" in mname:
       m.setModelTypeAsDenseNet121()
-      models[mname]["desc"] = "slower prediction time and highest accuracy"
+      classifiers[mname]["desc"] = "slower prediction time and highest accuracy"
 
-    m.setModelPath(models[mname]["path"])
+    m.setModelPath(classifiers[mname]["path"])
     m.loadModel()
 
-    models[mname]["model"] = m
+    classifiers[mname]["model"] = m
+
+  return classifiers
+
+def main():
+  classifiers = init_classifiers()
 
   for f in os.listdir("img"):
     print("--------------------")
     print("Image: %s" % f)
     print("--------------------")
-    for mname in models:
-      model = models[mname]
+    for mname in classifiers:
+      model = classifiers[mname]
       fsplit = os.path.splitext(f)
       if "jpg" in fsplit[1]:
-        predict(model, os.path.join(os.getcwd(), "img", f))
+        classify(model, os.path.join(os.getcwd(), "img", f))
 
 if __name__ == '__main__':
   main()

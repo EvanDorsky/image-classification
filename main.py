@@ -13,7 +13,34 @@ from pprint import pprint
 from subprocess import call, check_output
 import subprocess
 
-def classify(model, impath, result_count=10, debug=False):
+# Do I look like I know what a jay-peg is?
+# https://www.youtube.com/watch?v=QwucZK1BCj4
+IM_EXTS = [
+  ".jpg",
+  ".jpeg",
+  ".JPG",
+  ".JPEG"
+]
+
+def is_valid_impath(path):
+  p, ext = os.path.splitext(path)
+
+  # maybe not great to call os.path.exists on EVERY path
+  return ext in IM_EXTS and os.path.exists(path)
+
+# check the first argument (supposed to be path to image)
+# and make sure it's a path to an image
+def img_process(func):
+  def wrapper(*args, **kwargs):
+    if is_valid_impath(args[0]):
+      return func(*args, **kwargs)
+    else:
+      return None
+
+  return wrapper
+
+@img_process
+def classify(impath, model, result_count=10, debug=False):
   if debug:
     print("====================")
     print(model["name"])
@@ -37,13 +64,15 @@ def det_counts(detections):
 
   return det_counts
 
+@img_process
 def get_exifstamp(path):
   res = check_output(["exiftool", "-DateTimeOriginal", path], text=True)
   datetime_str = res.split(': ')[1].strip()
   dt_obj = datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
   return int(dt_obj.timestamp())
 
-def detect(model, impath, result_count=10, debug=False):
+@img_process
+def detect(impath, model, result_count=10, debug=False):
   if debug:
     print("====================")
     print(model["name"])
@@ -60,8 +89,7 @@ def detect(model, impath, result_count=10, debug=False):
       print(det["name"] , " : ", det["percentage_probability"], " : ", det["box_points"] )
       print("--------------------------------")
 
-  dets = det_counts(detections)
-  check_output(["exiftool", "-UserComment="+json.dumps(dets), impath, '-overwrite_original'])
+  return det_counts(detections)
 
 def init_classifiers():
   classifiers = {}
@@ -128,28 +156,19 @@ def init_detectors():
 def main():
   debug = False
 
-  classifiers = init_classifiers()
   detectors = init_detectors()
+  detector = detectors["yolov3.pt"]
 
-  for f in os.listdir("img"):
-    if debug:
-      print("--------------------")
-      print("Image: %s" % f)
-      print("--------------------")
+  all_dets = {}
+  for f in sorted(os.listdir("img")):
+    impath = os.path.join(os.getcwd(), "img", f)
+    print(impath)
+    key = get_exifstamp(impath)
+    metadata = detect(impath, detector)
 
-    # detect
-    for mname in detectors:
-      model = detectors[mname]
-      fsplit = os.path.splitext(f)
-      if "jpg" in fsplit[1]:
-        detect(model, os.path.join(os.getcwd(), "img", f))
+    all_dets[key] = metadata
 
-    # classify
-    # for mname in classifiers:
-    #   model = classifiers[mname]
-    #   fsplit = os.path.splitext(f)
-    #   if "jpg" in fsplit[1]:
-    #     classify(model, os.path.join(os.getcwd(), "img", f))
+  pprint(all_dets)
 
 if __name__ == '__main__':
   main()

@@ -3,6 +3,7 @@
 import warnings
 warnings.filterwarnings("ignore")
 
+import shutil
 from imageai.Classification import ImageClassification
 from imageai.Detection import ObjectDetection
 import os
@@ -153,7 +154,10 @@ def init_detectors():
 
   return detectors
 
-def main():
+def read():
+  pass
+
+def generate():
   debug = False
 
   detectors = init_detectors()
@@ -162,13 +166,26 @@ def main():
   all_dets = {}
   for f in sorted(os.listdir("img")):
     impath = os.path.join(os.getcwd(), "img", f)
-    print(impath)
-    key = get_exifstamp(impath)
-    metadata = detect(impath, detector)
+    timestamp = get_exifstamp(impath)
+    if not timestamp:
+      continue
 
-    all_dets[key] = metadata
+    dets = detect(impath, detector)
 
-  pprint(all_dets)
+    shutil.move(impath,
+      os.path.join(os.getcwd(), "img", str(timestamp)+os.path.splitext(f)[1])
+    )
+    metadata = {
+      "img": impath,
+      "detections": dets
+    }
+
+    if timestamp in all_dets:
+      print("Error: exists")
+    all_dets[timestamp] = metadata
+
+  with open("metadata.json", "w") as f:
+    json.dump(all_dets, f, indent=2, sort_keys=True)
 
 if __name__ == '__main__':
-  main()
+  generate()
